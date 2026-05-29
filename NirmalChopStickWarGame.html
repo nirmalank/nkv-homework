@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Nirmal Chopstick WarGame</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --bg:       #07080f;
+  --surface:  #0e1120;
+  --card:     #131729;
+  --border:   #1e2440;
+  --glow-p1:  #00e5ff;
+  --glow-p2:  #ff4081;
+  --text:     #e8ecff;
+  --muted:    #5a6080;
+  --accent:   #a78bfa;
+  --font-h:   'Syne', sans-serif;
+  --font-m:   'DM Mono', monospace;
+  --radius:   18px;
+  --tr:       0.22s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{height:100%;}
+body{
+  min-height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--font-h);overflow-x:hidden;
+  display:flex;flex-direction:column;align-items:center;padding:0 0 48px;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%,rgba(0,229,255,.06) 0%,transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 90%,rgba(255,64,129,.07) 0%,transparent 70%);
+}
+
+/* ── APP SHELL ── */
+#app{position:relative;z-index:1;width:100%;max-width:700px;display:flex;flex-direction:column;align-items:center;}
+
+/* ── HEADER ── */
+header{width:100%;padding:24px 20px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.logo{
+  font-size:clamp(1.1rem,3.5vw,1.6rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;
+  background:linear-gradient(120deg,var(--glow-p1),var(--accent),var(--glow-p2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo small{display:block;font-size:.55em;letter-spacing:.08em;opacity:.6;-webkit-text-fill-color:rgba(232,236,255,.5);}
+.header-btns{display:flex;gap:8px;flex-shrink:0;}
+.btn-icon{
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+  width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:1rem;
+  display:grid;place-items:center;transition:var(--tr);
+}
+.btn-icon:hover{color:var(--text);border-color:var(--accent);}
+
+/* ── MODE TOGGLE ── */
+#mode-toggle{
+  width:calc(100% - 32px);margin:14px 16px 0;
+  display:flex;gap:0;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:4px;overflow:hidden;
+}
+.mode-btn{
+  flex:1;padding:9px 10px;background:transparent;color:var(--muted);
+  font-family:var(--font-h);font-size:.8rem;font-weight:700;
+  border:none;border-radius:9px;cursor:pointer;transition:var(--tr);
+}
+.mode-btn.active{background:var(--surface);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3);}
+
+/* ── SCORE ROW ── */
+#score-row{
+  display:flex;gap:10px;align-items:center;
+  width:calc(100% - 32px);margin:8px 16px 0;
+  font-size:.72rem;font-family:var(--font-m);color:var(--muted);flex-wrap:wrap;
+}
+.score-label{letter-spacing:.08em;}
+.score-pips{display:flex;gap:4px;}
+.pip{width:7px;height:7px;border-radius:50%;}
+.pip.p1{background:var(--glow-p1);box-shadow:0 0 6px rgba(0,229,255,.5);}
+.pip.p2{background:var(--glow-p2);box-shadow:0 0 6px rgba(255,64,129,.5);}
+#ai-thinking{display:none;align-items:center;gap:6px;font-size:.75rem;color:var(--glow-p2);}
+#ai-thinking.show{display:flex;}
+.thinking-dots span{
+  display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:var(--glow-p2);margin:0 2px;
+  animation:think .8s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2){animation-delay:.15s;}
+.thinking-dots span:nth-child(3){animation-delay:.3s;}
+@keyframes think{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* ── STATUS BAR ── */
+#status-bar{
+  margin:12px 16px 0;width:calc(100% - 32px);
+  background:var(--card);border:1px solid var(--border);border-radius:40px;
+  padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:.82rem;font-family:var(--font-m);
+}
+.pulse-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--glow-p1);
+  box-shadow:0 0 8px var(--glow-p1);flex-shrink:0;
+  animation:blink 1.2s ease-in-out infinite;
+}
+.pulse-dot.p2{background:var(--glow-p2);box-shadow:0 0 8px var(--glow-p2);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#status-msg{flex:1;color:var(--text);}
+#math-flash{font-family:var(--font-m);font-size:.78rem;color:var(--accent);opacity:0;transition:opacity .3s;white-space:nowrap;}
+#math-flash.show{opacity:1;}
+
+/* ── BOARD ── */
+#board{width:100%;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+
+/* ── PLAYER ROWS ── */
+.player-row{
+  display:flex;align-items:center;gap:10px;padding:16px 18px;
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+  position:relative;transition:border-color .3s,box-shadow .3s;
+}
+.player-row.active-player{
+  border-color:rgba(167,139,250,.4);
+  box-shadow:0 0 20px rgba(167,139,250,.08),inset 0 0 30px rgba(167,139,250,.03);
+}
+.player-row.p1{flex-direction:row;}
+.player-row.p2{flex-direction:row-reverse;}
+
+/* Player label */
+.player-label{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:52px;cursor:pointer;}
+.player-label:hover .avatar{border-color:var(--accent);}
+.player-label .tag{font-size:.58rem;font-family:var(--font-m);color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+.player-label .pname{font-size:.82rem;font-weight:700;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.player-row.p1 .player-label .pname{color:var(--glow-p1);text-shadow:0 0 12px rgba(0,229,255,.5);}
+.player-row.p2 .player-label .pname{color:var(--glow-p2);text-shadow:0 0 12px rgba(255,64,129,.5);}
+.player-label .avatar{
+  width:44px;height:44px;border-radius:50%;border:2px solid var(--border);
+  display:grid;place-items:center;font-size:1.5rem;background:var(--surface);
+  transition:border-color .2s;overflow:hidden;
+}
+.player-label .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.edit-hint{font-size:.5rem;color:var(--muted);font-family:var(--font-m);}
+
+/* Hands */
+.hands{flex:1;display:flex;gap:10px;justify-content:center;}
+.player-row.p1 .hands{flex-direction:row;}
+.player-row.p2 .hands{flex-direction:row-reverse;}
+
+/* ── HAND CARDS ── */
+.hand-card{
+  position:relative;width:100%;max-width:128px;aspect-ratio:1/1.2;
+  background:var(--surface);border:2px solid var(--border);border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  cursor:pointer;transition:transform var(--tr),border-color var(--tr),box-shadow var(--tr),opacity var(--tr);
+  user-select:none;overflow:hidden;
+}
+.hand-card:hover:not(.dead):not(.disabled){transform:translateY(-4px) scale(1.02);}
+.hand-card.dead{opacity:.35;cursor:not-allowed;}
+.hand-card.disabled{cursor:default;}
+.hand-card.p1-card:not(.dead):not(.selected-attacker){border-color:rgba(0,229,255,.2);}
+.hand-card.p2-card:not(.dead):not(.selected-target){border-color:rgba(255,64,129,.2);}
+.hand-card.selected-attacker{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(167,139,250,.3),0 0 20px rgba(167,139,250,.25);
+  transform:translateY(-6px) scale(1.04);
+}
+.hand-card.selected-target{
+  border-color:#f59e0b;
+  box-shadow:0 0 0 3px rgba(245,158,11,.3),0 0 20px rgba(245,158,11,.25);
+  animation:tpulse .5s ease-in-out infinite alternate;
+}
+/* Split-eligible highlight */
+.hand-card.split-eligible{
+  border-color:#4ade80;
+  box-shadow:0 0 0 3px rgba(74,222,128,.25),0 0 16px rgba(74,222,128,.2);
+  animation:spulse .6s ease-in-out infinite alternate;
+}
+@keyframes tpulse{
+  from{box-shadow:0 0 0 3px rgba(245,158,11,.3),0 0 10px rgba(245,158,11,.2);}
+  to{box-shadow:0 0 0 5px rgba(245,158,11,.5),0 0 28px rgba(245,158,11,.45);}
+}
+@keyframes spulse{
+  from{box-shadow:0 0 0 3px rgba(74,222,128,.25),0 0 10px rgba(74,222,128,.15);}
+  to{box-shadow:0 0 0 5px rgba(74,222,128,.45),0 0 24px rgba(74,222,128,.35);}
+}
+.hand-card.attack-flash{animation:aflash .35s ease-out;}
+@keyframes aflash{0%{background:rgba(167,139,250,.3);transform:scale(1.08);}100%{background:var(--surface);transform:scale(1);}}
+.hand-card.split-flash{animation:sflash .4s ease-out;}
+@keyframes sflash{0%{background:rgba(74,222,128,.3);transform:scale(1.06);}100%{background:var(--surface);transform:scale(1);}}
+
+.hand-label{
+  font-size:.58rem;font-family:var(--font-m);color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;
+  position:absolute;top:7px;left:0;right:0;text-align:center;
+}
+.finger-count{font-size:1.3rem;font-weight:800;line-height:1;}
+.p1-card .finger-count{color:var(--glow-p1);text-shadow:0 0 14px rgba(0,229,255,.7);}
+.p2-card .finger-count{color:var(--glow-p2);text-shadow:0 0 14px rgba(255,64,129,.7);}
+.dead .finger-count{color:var(--muted);text-shadow:none;}
+
+/* ── SVG HAND ── */
+.hand-svg-wrap{width:60px;height:60px;display:flex;align-items:center;justify-content:center;}
+.hand-svg-wrap svg{width:100%;height:100%;}
+
+/* ── VS DIVIDER ── */
+#vs-divider{display:flex;align-items:center;gap:12px;padding:2px 16px;}
+.div-line{flex:1;height:1px;background:var(--border);}
+.vs-badge{font-size:.68rem;font-family:var(--font-m);color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:3px 10px;letter-spacing:.12em;}
+
+/* ── ACTION AREA ── */
+#action-area{width:calc(100% - 32px);margin:4px 16px 0;display:flex;gap:10px;}
+.btn-main{
+  flex:1;padding:13px 16px;
+  background:linear-gradient(135deg,var(--accent) 0%,#7c3aed 100%);
+  color:#fff;font-family:var(--font-h);font-size:.95rem;font-weight:700;
+  border:none;border-radius:12px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(124,58,237,.35);transition:var(--tr);
+}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,.5);}
+.btn-main:active{transform:translateY(0);}
+.btn-main:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none;}
+.btn-reset{
+  padding:13px 16px;background:var(--card);color:var(--muted);
+  font-family:var(--font-h);font-size:.9rem;font-weight:700;
+  border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:var(--tr);
+}
+.btn-reset:hover{color:var(--text);border-color:var(--muted);}
+
+/* ── INSTRUCTION CHIPS ── */
+#instructions{width:calc(100% - 32px);margin:6px 16px 0;display:flex;gap:7px;flex-wrap:wrap;}
+.chip{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  padding:5px 12px;font-size:.68rem;font-family:var(--font-m);color:var(--muted);
+  display:flex;align-items:center;gap:5px;
+}
+.chip .num{color:var(--accent);font-weight:700;}
+
+/* ── WIN OVERLAY ── */
+#win-overlay{
+  position:fixed;inset:0;z-index:100;background:rgba(7,8,15,.85);
+  backdrop-filter:blur(12px);display:none;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+#win-overlay.show{display:flex;animation:fade-in .4s ease;}
+@keyframes fade-in{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.win-card{
+  background:var(--card);border:2px solid var(--border);border-radius:28px;padding:44px 48px;
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  text-align:center;max-width:360px;width:92%;
+  animation:bounce-in .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes bounce-in{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+.win-emoji{font-size:3.8rem;animation:spin-once 1s ease-out;}
+@keyframes spin-once{0%{transform:rotate(-15deg) scale(.5)}80%{transform:rotate(5deg) scale(1.1)}100%{transform:rotate(0) scale(1)}}
+.win-avatar{width:72px;height:72px;border-radius:50%;font-size:2.5rem;background:var(--surface);border:3px solid var(--accent);display:grid;place-items:center;overflow:hidden;}
+.win-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.win-title{
+  font-size:1.9rem;font-weight:800;letter-spacing:-.03em;
+  background:linear-gradient(120deg,var(--glow-p1),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.win-title.p2win{background:linear-gradient(120deg,var(--glow-p2),var(--accent));-webkit-background-clip:text;background-clip:text;}
+.win-sub{color:var(--muted);font-size:.88rem;font-family:var(--font-m);}
+.win-play-again{
+  margin-top:6px;padding:13px 34px;
+  background:linear-gradient(135deg,var(--accent),#7c3aed);
+  color:#fff;font-family:var(--font-h);font-size:.95rem;font-weight:800;
+  border:none;border-radius:12px;cursor:pointer;
+  box-shadow:0 4px 24px rgba(124,58,237,.4);transition:var(--tr);
+}
+.win-play-again:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(124,58,237,.55);}
+
+/* ── TUTORIAL ── */
+#tutorial-overlay{
+  position:fixed;inset:0;z-index:200;background:rgba(7,8,15,.9);
+  backdrop-filter:blur(10px);display:none;flex-direction:column;
+  align-items:center;justify-content:center;padding:16px;
+}
+#tutorial-overlay.show{display:flex;}
+.tutorial-card{
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:24px;padding:32px 32px 24px;max-width:440px;width:100%;
+  display:flex;flex-direction:column;gap:16px;max-height:90vh;overflow-y:auto;
+}
+.tutorial-card h2{font-size:1.3rem;font-weight:800;}
+.rule-list{list-style:none;display:flex;flex-direction:column;gap:9px;}
+.rule-list li{display:flex;gap:11px;align-items:flex-start;font-size:.84rem;color:var(--muted);line-height:1.5;}
+.rule-list li .icon{font-size:1rem;flex-shrink:0;margin-top:2px;}
+.rule-list li strong{color:var(--text);}
+.tutorial-close{padding:12px;background:var(--accent);color:#fff;font-family:var(--font-h);font-weight:700;font-size:.88rem;border:none;border-radius:10px;cursor:pointer;transition:var(--tr);}
+.tutorial-close:hover{background:#7c3aed;}
+
+/* ── PLAYER CUSTOMISE OVERLAY ── */
+#customise-overlay{
+  position:fixed;inset:0;z-index:300;background:rgba(7,8,15,.92);
+  backdrop-filter:blur(12px);display:none;flex-direction:column;
+  align-items:center;justify-content:center;padding:16px;
+}
+#customise-overlay.show{display:flex;}
+.customise-card{
+  background:var(--card);border:1.5px solid var(--border);border-radius:24px;
+  padding:32px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:20px;
+}
+.customise-card h2{font-size:1.3rem;font-weight:800;text-align:center;}
+.customise-player-title{
+  font-size:.72rem;font-family:var(--font-m);letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:2px;
+}
+.p1-title{color:var(--glow-p1);}
+.p2-title{color:var(--glow-p2);}
+.field-group{display:flex;flex-direction:column;gap:10px;}
+.field-label{font-size:.75rem;font-family:var(--font-m);color:var(--muted);margin-bottom:2px;}
+.field-input{
+  width:100%;padding:10px 14px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:10px;
+  color:var(--text);font-family:var(--font-h);font-size:.95rem;
+  outline:none;transition:border-color .2s;
+}
+.field-input:focus{border-color:var(--accent);}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.emoji-opt{
+  width:40px;height:40px;border-radius:10px;font-size:1.3rem;
+  background:var(--surface);border:2px solid var(--border);
+  cursor:pointer;display:grid;place-items:center;transition:var(--tr);
+}
+.emoji-opt:hover{border-color:var(--accent);transform:scale(1.1);}
+.emoji-opt.selected{border-color:var(--accent);background:rgba(167,139,250,.15);}
+.file-upload-row{display:flex;align-items:center;gap:10px;}
+.file-upload-btn{
+  padding:8px 14px;background:var(--surface);border:1.5px solid var(--border);
+  border-radius:9px;color:var(--muted);font-family:var(--font-m);font-size:.78rem;
+  cursor:pointer;transition:var(--tr);white-space:nowrap;
+}
+.file-upload-btn:hover{border-color:var(--accent);color:var(--text);}
+.avatar-preview{width:44px;height:44px;border-radius:50%;border:2px solid var(--border);background:var(--surface);display:grid;place-items:center;font-size:1.5rem;overflow:hidden;}
+.avatar-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.customise-divider{height:1px;background:var(--border);}
+.customise-actions{display:flex;gap:10px;}
+.btn-save{
+  flex:1;padding:12px;background:linear-gradient(135deg,var(--accent),#7c3aed);
+  color:#fff;font-family:var(--font-h);font-weight:700;font-size:.9rem;
+  border:none;border-radius:10px;cursor:pointer;transition:var(--tr);
+}
+.btn-save:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,.4);}
+.btn-close-cust{
+  padding:12px 18px;background:var(--surface);border:1.5px solid var(--border);
+  color:var(--muted);font-family:var(--font-h);font-weight:700;font-size:.9rem;
+  border-radius:10px;cursor:pointer;transition:var(--tr);
+}
+.btn-close-cust:hover{color:var(--text);}
+
+/* ── INLINE SPLIT BUTTON (between hands) ── */
+.split-between{
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.btn-split-inline{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,#16a34a,#4ade80);
+  color:#fff;font-size:1rem;border:none;cursor:pointer;
+  display:grid;place-items:center;
+  box-shadow:0 2px 12px rgba(22,163,74,.4);
+  transition:var(--tr);opacity:1;
+}
+.btn-split-inline:hover{transform:scale(1.12);box-shadow:0 4px 18px rgba(22,163,74,.6);}
+.btn-split-inline:disabled{opacity:.2;cursor:default;transform:none;box-shadow:none;}
+
+/* ── ATTACK LINE ── */
+#attack-line-svg{position:fixed;inset:0;pointer-events:none;z-index:50;width:100%;height:100%;}
+#attack-path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-dasharray:8 4;stroke-linecap:round;opacity:0;transition:opacity .2s;}
+#attack-path.show{opacity:1;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .player-row{padding:12px 10px;gap:7px;}
+  .hand-card{max-width:100px;border-radius:12px;}
+  .hand-svg-wrap{width:48px;height:48px;}
+  .player-label{min-width:44px;}
+  .win-card{padding:32px 24px;}
+  .customise-card{padding:24px;}
+}
+@media(max-width:360px){
+  .hand-card{max-width:84px;}
+  .hand-svg-wrap{width:40px;height:40px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SVG attack line -->
+<svg id="attack-line-svg" aria-hidden="true">
+  <defs>
+    <filter id="glow-filter">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path id="attack-path" filter="url(#glow-filter)"/>
+</svg>
+
+<!-- ══ TUTORIAL OVERLAY ══ -->
+<div id="tutorial-overlay" role="dialog" aria-modal="true" aria-label="How to play">
+  <div class="tutorial-card">
+    <h2>🥢 How to Play</h2>
+    <ul class="rule-list">
+      <li><span class="icon">☝️</span><div>Each player starts with <strong>1 finger</strong> on each hand.</div></li>
+      <li><span class="icon">⚔️</span><div>On your turn, tap <strong>your hand</strong> then tap an <strong>opponent's hand</strong> to attack.</div></li>
+      <li><span class="icon">➕</span><div>Your fingers are <strong>added</strong> to theirs. e.g. <em>3 + 4 = 7</em></div></li>
+      <li><span class="icon">💀</span><div>Result of <strong>exactly 5</strong> → that hand <strong>dies (0)</strong>.</div></li>
+      <li><span class="icon">🔄</span><div>Result <strong>over 5</strong> → subtract 5. <em>7→2, 9→4</em></div></li>
+      <li><span class="icon">✂️</span><div><strong>Split rule:</strong> If one hand has an <strong>even number</strong> and the other is <strong>dead (0)</strong>, you may split evenly between both hands instead of attacking. e.g. 4→0 splits to 2+2.</div></li>
+      <li><span class="icon">🚫</span><div>Dead hands (0) <strong>cannot attack</strong>.</div></li>
+      <li><span class="icon">🏆</span><div>Win by making <strong>both</strong> opponent hands dead!</div></li>
+      <li><span class="icon">🎨</span><div>Tap your <strong>avatar/name</strong> to customise your player!</div></li>
+    </ul>
+    <button class="tutorial-close" onclick="closeTutorial()">Got it! Let's Play ✊</button>
+  </div>
+</div>
+
+<!-- ══ WIN OVERLAY ══ -->
+<div id="win-overlay" role="dialog" aria-modal="true">
+  <div class="win-card">
+    <div class="win-avatar" id="win-avatar">🏆</div>
+    <div class="win-title" id="win-title">Player 1 Wins!</div>
+    <div class="win-sub" id="win-sub">Flawless!</div>
+    <button class="win-play-again" onclick="restartGame()">Play Again ↻</button>
+  </div>
+</div>
+
+<!-- ══ CUSTOMISE OVERLAY ══ -->
+<div id="customise-overlay" role="dialog" aria-modal="true" aria-label="Customise player">
+  <div class="customise-card">
+    <h2>✏️ Customise Player</h2>
+    <div id="cust-player-title" class="customise-player-title p1-title">PLAYER 1</div>
+
+    <!-- Name -->
+    <div class="field-group">
+      <div class="field-label">Player Name</div>
+      <input class="field-input" id="cust-name" type="text" maxlength="14" placeholder="Enter name…"/>
+    </div>
+
+    <!-- Icon picker -->
+    <div class="field-group">
+      <div class="field-label">Choose Icon</div>
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="field-group">
+      <div class="field-label">Or Upload Photo</div>
+      <div class="file-upload-row">
+        <label class="file-upload-btn" for="cust-file-input">📁 Choose image</label>
+        <input type="file" id="cust-file-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
+        <div class="avatar-preview" id="cust-preview">😀</div>
+      </div>
+    </div>
+
+    <div class="customise-divider"></div>
+    <div class="customise-actions">
+      <button class="btn-close-cust" onclick="closeCustomise()">Cancel</button>
+      <button class="btn-save" onclick="saveCustomise()">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app">
+  <header>
+    <div class="logo">
+      Nirmal Chopstick WarGame
+      <small>FINGER DUEL · STRATEGY</small>
+    </div>
+    <div class="header-btns">
+      <button class="btn-icon" onclick="openTutorial()" title="How to play">?</button>
+      <button class="btn-icon" onclick="toggleSound()" id="sound-btn" title="Toggle sound">🔊</button>
+    </div>
+  </header>
+
+  <div id="mode-toggle">
+    <button class="mode-btn active" id="btn-pvp" onclick="setMode('pvp')">👥 2 Players</button>
+    <button class="mode-btn" id="btn-ai" onclick="setMode('ai')">🤖 vs AI</button>
+  </div>
+
+  <div id="score-row">
+    <span class="score-label">Wins:</span>
+    <div class="score-pips" id="score-pips-p1"></div>
+    <span id="score-text-p1" style="color:var(--glow-p1)">P1: 0</span>
+    &nbsp;|&nbsp;
+    <span id="score-text-p2" style="color:var(--glow-p2)">P2: 0</span>
+    <div class="score-pips" id="score-pips-p2"></div>
+    <div id="ai-thinking" aria-live="polite">
+      <span id="ai-thinking-name">AI</span> thinking<div class="thinking-dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+
+  <div id="status-bar">
+    <div class="pulse-dot" id="pulse-dot"></div>
+    <div id="status-msg">Select your attacking hand</div>
+    <div id="math-flash"></div>
+  </div>
+
+  <div id="board">
+    <!-- Player 2 row -->
+    <div class="player-row p2" id="row-p2">
+      <div class="player-label" onclick="openCustomise(2)" title="Customise Player 2">
+        <div class="avatar" id="avatar-p2">🧑‍🚀</div>
+        <div class="tag">Player</div>
+        <div class="pname" id="p2-name">P2</div>
+        <div class="edit-hint">✏ edit</div>
+      </div>
+      <div class="hands" id="hands-p2">
+        <div class="hand-card p2-card" id="p2-right" data-player="2" data-hand="right" onclick="handleHandClick(this)" role="button" tabindex="0" aria-label="Player 2 Right hand">
+          <div class="hand-label">Right</div>
+          <div class="hand-svg-wrap" id="sv-p2-right"></div>
+          <div class="finger-count" id="fc-p2-right">1</div>
+        </div>
+        <div class="split-between">
+          <button class="btn-split-inline" id="btn-split-p2" onclick="executeSplit()" disabled title="Split even hand to dead hand">✂️</button>
+        </div>
+        <div class="hand-card p2-card" id="p2-left" data-player="2" data-hand="left" onclick="handleHandClick(this)" role="button" tabindex="0" aria-label="Player 2 Left hand">
+          <div class="hand-label">Left</div>
+          <div class="hand-svg-wrap" id="sv-p2-left"></div>
+          <div class="finger-count" id="fc-p2-left">1</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="vs-divider">
+      <div class="div-line"></div>
+      <div class="vs-badge">VS</div>
+      <div class="div-line"></div>
+    </div>
+
+    <!-- Player 1 row -->
+    <div class="player-row p1" id="row-p1">
+      <div class="player-label" onclick="openCustomise(1)" title="Customise Player 1">
+        <div class="avatar" id="avatar-p1">🧙</div>
+        <div class="tag">Player</div>
+        <div class="pname" id="p1-name">P1</div>
+        <div class="edit-hint">✏ edit</div>
+      </div>
+      <div class="hands" id="hands-p1">
+        <div class="hand-card p1-card" id="p1-left" data-player="1" data-hand="left" onclick="handleHandClick(this)" role="button" tabindex="0" aria-label="Player 1 Left hand">
+          <div class="hand-label">Left</div>
+          <div class="hand-svg-wrap" id="sv-p1-left"></div>
+          <div class="finger-count" id="fc-p1-left">1</div>
+        </div>
+        <div class="split-between">
+          <button class="btn-split-inline" id="btn-split-p1" onclick="executeSplit()" disabled title="Split even hand to dead hand">✂️</button>
+        </div>
+        <div class="hand-card p1-card" id="p1-right" data-player="1" data-hand="right" onclick="handleHandClick(this)" role="button" tabindex="0" aria-label="Player 1 Right hand">
+          <div class="hand-label">Right</div>
+          <div class="hand-svg-wrap" id="sv-p1-right"></div>
+          <div class="finger-count" id="fc-p1-right">1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="action-area">
+    <button class="btn-main" id="btn-cancel" onclick="cancelSelection()" disabled>✕ Cancel</button>
+    <button class="btn-reset" onclick="restartGame()">↻ New Game</button>
+  </div>
+
+  <div id="instructions">
+    <div class="chip"><span class="num">①</span> Pick your hand</div>
+    <div class="chip"><span class="num">②</span> Tap opponent's hand</div>
+    <div class="chip">5=☠️ &nbsp;>5 wraps &nbsp;✂️ split even→dead</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     JAVASCRIPT GAME ENGINE
+     ══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─── PLAYER PROFILES ──────────────────────────────────────────
+const profiles = {
+  1: { name: 'P1', icon: '🧙',  photo: null },
+  2: { name: 'P2', icon: '🧑‍🚀', photo: null },
+};
+
+// Emoji options for the picker
+const EMOJI_OPTIONS = ['🧙','🧑‍🚀','🤖','🦊','🐉','🦁','🐺','🦅','👾','🎮','🔥','⚡','🌊','🌙','💎','🎯'];
+
+// ─── GAME STATE ───────────────────────────────────────────────
+const state = {
+  hands: { 1:{left:1,right:1}, 2:{left:1,right:1} },
+  currentPlayer: 1,
+  phase: 'select-attacker', // 'select-attacker' | 'select-target'
+  selectedAttacker: null,
+  mode: 'pvp',
+  scores: { 1:0, 2:0 },
+  soundOn: true,
+  gameOver: false,
+};
+
+// ─── AUDIO ────────────────────────────────────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function getAudio(){ if(!audioCtx) audioCtx=new AudioCtx(); return audioCtx; }
+function playTone(freq,type,dur,gain=0.18){
+  if(!state.soundOn) return;
+  try{
+    const ctx=getAudio(), osc=ctx.createOscillator(), g=ctx.createGain();
+    osc.type=type; osc.frequency.value=freq;
+    g.gain.setValueAtTime(gain,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+const sfxSelect = ()=>playTone(520,'sine',.12,.12);
+const sfxAttack = ()=>{ playTone(340,'triangle',.18,.18); setTimeout(()=>playTone(280,'triangle',.2,.14),80); };
+const sfxDead   = ()=>playTone(120,'sawtooth',.4,.2);
+const sfxWin    = ()=>{ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',.3,.18),i*120)); };
+const sfxCancel = ()=>playTone(300,'sine',.1,.1);
+const sfxSplit  = ()=>{ playTone(660,'sine',.15,.15); setTimeout(()=>playTone(880,'sine',.15,.12),120); };
+
+// ─── DOM HELPERS ──────────────────────────────────────────────
+const el    = id => document.getElementById(id);
+const cardEl = (p,h) => el(`p${p}-${h}`);
+
+// ─── SVG PALM HAND GENERATOR ──────────────────────────────────
+/*
+  Draws a stylised palm + raised fingers using SVG paths.
+  count = 0 → closed fist (✊ shape)
+  count = 1–4 → palm base + N fingers raised
+
+  Finger order (left to right): index, middle, ring, pinky
+  Each finger has slightly different heights for realism.
+*/
+function buildHandSVG(count, color, isDead) {
+  const W = 56, H = 60;
+  // Finger positions: [cx, fingerWidth, maxHeight, baseY]
+  const fingers = [
+    { cx:12, w:9,  maxH:32, base:30 },  // index
+    { cx:22, w:9,  maxH:36, base:28 },  // middle
+    { cx:32, w:9,  maxH:34, base:29 },  // ring
+    { cx:42, w:8,  maxH:27, base:32 },  // pinky
+  ];
+
+  const c   = isDead ? '#2a2d45' : color;
+  const glow= isDead ? 'none' : `drop-shadow(0 0 4px ${color}88)`;
+  const palmY = 36, palmH = 20;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="filter:${glow}">`;
+
+  if (count === 0) {
+    // Closed fist — rounded rectangle with knuckle bumps
+    svg += `<rect x="8" y="26" width="40" height="26" rx="8" fill="${c}" opacity=".85"/>`;
+    // Knuckle bumps
+    for (let i=0;i<4;i++) {
+      svg += `<ellipse cx="${14+i*10}" cy="26" rx="5" ry="4" fill="${c}" opacity=".85"/>`;
+    }
+    // Thumb stub
+    svg += `<rect x="4" y="30" width="12" height="10" rx="5" fill="${c}" opacity=".7"/>`;
+  } else {
+    // Palm base
+    svg += `<rect x="6" y="${palmY}" width="${W-12}" height="${palmH}" rx="8" fill="${c}" opacity=".85"/>`;
+    // Thumb
+    svg += `<rect x="2" y="${palmY+2}" width="10" height="14" rx="5" fill="${c}" opacity=".7"/>`;
+    // Fingers
+    for (let i=0;i<4;i++){
+      const f = fingers[i];
+      const raised = (i < count); // fingers 0..count-1 are raised
+      const fh = raised ? f.maxH : 8;
+      const fy = f.base - (raised ? f.maxH : 0);
+      const opacity = raised ? '.9' : '.25';
+      svg += `<rect x="${f.cx-f.w/2}" y="${fy}" width="${f.w}" height="${fh}" rx="${f.w/2}" fill="${c}" opacity="${opacity}"/>`;
+    }
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function renderAll(){
+  for(const p of [1,2]) for(const h of ['left','right']) renderHand(p,h);
+  renderPlayerRows();
+  renderStatus();
+  renderScores();
+  renderProfiles();
+  el('btn-cancel').disabled = (state.phase !== 'select-target');
+  updateSplitButton();
+}
+
+function renderHand(player, hand){
+  const val  = state.hands[player][hand];
+  const card = cardEl(player, hand);
+  const sv   = el(`sv-p${player}-${hand}`);
+  const fc   = el(`fc-p${player}-${hand}`);
+  const dead = val === 0;
+  const color= player===1 ? '#00e5ff' : '#ff4081';
+
+  // SVG hand
+  sv.innerHTML = buildHandSVG(val, color, dead);
+
+  // Count badge
+  fc.textContent = dead ? '✕' : val;
+  card.classList.toggle('dead', dead);
+
+  // Clickability
+  const isActive = player === state.currentPlayer;
+  const isOpp    = !isActive;
+  const canAtk   = isActive && !dead && state.phase==='select-attacker' && !state.gameOver;
+  const canTgt   = isOpp   && !dead && state.phase==='select-target'   && !state.gameOver;
+  card.classList.toggle('disabled', !(canAtk||canTgt));
+  card.setAttribute('tabindex', (canAtk||canTgt) ? '0' : '-1');
+}
+
+function renderPlayerRows(){
+  el('row-p1').classList.toggle('active-player', state.currentPlayer===1);
+  el('row-p2').classList.toggle('active-player', state.currentPlayer===2);
+
+  document.querySelectorAll('.hand-card').forEach(c=>{
+    c.classList.remove('selected-attacker','selected-target','split-eligible');
+  });
+  if(state.selectedAttacker){
+    const {player,hand} = state.selectedAttacker;
+    cardEl(player,hand).classList.add('selected-attacker');
+    const opp = player===1?2:1;
+    for(const h of ['left','right']){
+      if(state.hands[opp][h]!==0) cardEl(opp,h).classList.add('selected-target');
+    }
+  }
+  // Highlight split-eligible hands for current player (when in select-attacker phase)
+  if(state.phase==='select-attacker' && !state.gameOver){
+    const sp = canSplit(state.currentPlayer);
+    if(sp){
+      // Highlight the even hand and the dead hand
+      const {evenHand, deadHand} = sp;
+      cardEl(state.currentPlayer, evenHand).classList.add('split-eligible');
+      cardEl(state.currentPlayer, deadHand).classList.add('split-eligible');
+    }
+  }
+}
+
+function renderStatus(){
+  const dot = el('pulse-dot');
+  const msg = el('status-msg');
+  if(state.gameOver){ msg.textContent=`Game over — well played!`; return; }
+  const isAI = state.mode==='ai' && state.currentPlayer===2;
+  const pName = getPlayerName(state.currentPlayer);
+  dot.className = 'pulse-dot'+(state.currentPlayer===2?' p2':'');
+  if(state.phase==='select-attacker'){
+    msg.textContent = isAI ? `${pName} is thinking…` : `${pName} — pick attacking hand (or ✂️ split)`;
+  } else {
+    msg.textContent = `${pName} — pick opponent's hand to attack`;
+  }
+  // Update AI thinking label to use custom name
+  const aiNameEl = el('ai-thinking-name');
+  if(aiNameEl) aiNameEl.textContent = getPlayerName(2);
+}
+
+function renderScores(){
+  const {1:s1,2:s2} = state.scores;
+  el('score-text-p1').textContent=`${profiles[1].name}: ${s1}`;
+  el('score-text-p2').textContent=`${profiles[2].name}: ${s2}`;
+  const mkPips=(eid,count,cls)=>{
+    const c=el(eid); c.innerHTML='';
+    for(let i=0;i<Math.min(count,10);i++){
+      const p=document.createElement('div'); p.className='pip '+cls; c.appendChild(p);
+    }
+  };
+  mkPips('score-pips-p1',s1,'p1');
+  mkPips('score-pips-p2',s2,'p2');
+}
+
+function renderProfiles(){
+  for(const p of [1,2]){
+    const pr = profiles[p];
+    el(`p${p}-name`).textContent = pr.name;
+    const av = el(`avatar-p${p}`);
+    if(pr.photo){
+      av.innerHTML = `<img src="${pr.photo}" alt="${pr.name}"/>`;
+    } else {
+      av.textContent = pr.icon;
+    }
+  }
+}
+
+function flashMath(str){
+  const m=el('math-flash');
+  m.textContent=str; m.classList.add('show');
+  clearTimeout(flashMath._t);
+  flashMath._t=setTimeout(()=>m.classList.remove('show'),2400);
+}
+
+// ─── ATTACK LINE ANIMATION ────────────────────────────────────
+function animateAttackLine(fromCard,toCard){
+  const fr=fromCard.getBoundingClientRect(), tr=toCard.getBoundingClientRect();
+  const x1=fr.left+fr.width/2, y1=fr.top+fr.height/2;
+  const x2=tr.left+tr.width/2, y2=tr.top+tr.height/2;
+  const mx=(x1+x2)/2, my=Math.min(y1,y2)-40;
+  const path=el('attack-path');
+  path.setAttribute('d',`M${x1},${y1} Q${mx},${my} ${x2},${y2}`);
+  path.classList.add('show');
+  setTimeout(()=>path.classList.remove('show'),500);
+}
+
+// ─── SPLIT LOGIC ──────────────────────────────────────────────
+/**
+ * Returns {evenHand, deadHand, splitVal} if the player can split, else null.
+ * Condition: one hand is even (2 or 4), the other is dead (0).
+ */
+function canSplit(player){
+  const h = state.hands[player];
+  for(const [a,b] of [['left','right'],['right','left']]){
+    if(h[a]!==0 && h[a]%2===0 && h[b]===0){
+      return { evenHand:a, deadHand:b, splitVal: h[a]/2 };
+    }
+  }
+  return null;
+}
+
+function updateSplitButton(){
+  // Show/enable each player's inline split button only when it's their turn and they can split
+  for(const p of [1,2]){
+    const btn = el(`btn-split-p${p}`);
+    if(!btn) continue;
+    const isMyTurn = state.currentPlayer===p && state.phase==='select-attacker' && !state.gameOver;
+    const isAITurn = state.mode==='ai' && p===2;
+    const sp = isMyTurn && !isAITurn && canSplit(p);
+    btn.disabled = !sp;
+  }
+}
+
+function executeSplit(){
+  if(state.gameOver) return;
+  const sp = canSplit(state.currentPlayer);
+  if(!sp) return;
+  const p = state.currentPlayer;
+  const {evenHand, deadHand, splitVal} = sp;
+
+  state.hands[p][evenHand] = splitVal;
+  state.hands[p][deadHand] = splitVal;
+  sfxSplit();
+  flashMath(`Split! ${splitVal*2} → ${splitVal} + ${splitVal} ✂️`);
+
+  // Flash both cards
+  [evenHand, deadHand].forEach(h=>{
+    const c=cardEl(p,h);
+    c.classList.add('split-flash');
+    setTimeout(()=>c.classList.remove('split-flash'),450);
+  });
+
+  // ✂️ Split does NOT switch turn — same player continues
+  state.phase='select-attacker';
+  state.selectedAttacker=null;
+  renderAll();
+}
+
+// ─── GAME LOGIC ───────────────────────────────────────────────
+function computeAttack(atkVal, tgtVal){
+  let result = atkVal + tgtVal;
+  let mathStr = `${atkVal} + ${tgtVal} = ${result}`;
+  if(result===5){ mathStr+=' → ☠️ Dead!'; return {newVal:0, mathStr}; }
+  if(result>5){
+    const w=result-5;
+    mathStr+=` → ${result}−5 = ${w}`;
+    if(w===5){ mathStr+=' → ☠️ Dead!'; return {newVal:0, mathStr}; }
+    return {newVal:w, mathStr};
+  }
+  mathStr+=` → ${result}`;
+  return {newVal:result, mathStr};
+}
+
+function executeAttack(atkP, atkH, tgtP, tgtH){
+  if(state.gameOver) return;
+  const atkVal=state.hands[atkP][atkH], tgtVal=state.hands[tgtP][tgtH];
+  const {newVal, mathStr} = computeAttack(atkVal, tgtVal);
+
+  animateAttackLine(cardEl(atkP,atkH), cardEl(tgtP,tgtH));
+  sfxAttack();
+  state.hands[tgtP][tgtH] = newVal;
+  flashMath(mathStr);
+
+  setTimeout(()=>{
+    cardEl(tgtP,tgtH).classList.add('attack-flash');
+    if(newVal===0) sfxDead();
+    setTimeout(()=>cardEl(tgtP,tgtH).classList.remove('attack-flash'),400);
+  },150);
+
+  if(state.hands[tgtP].left===0 && state.hands[tgtP].right===0){
+    state.gameOver=true;
+    state.scores[atkP]++;
+    setTimeout(()=>showWin(atkP),650);
+    renderAll(); return;
+  }
+
+  state.currentPlayer = state.currentPlayer===1?2:1;
+  state.phase='select-attacker';
+  state.selectedAttacker=null;
+  renderAll();
+  if(state.mode==='ai' && state.currentPlayer===2) scheduleAiMove();
+}
+
+function handleHandClick(card){
+  if(state.gameOver) return;
+  const player=parseInt(card.dataset.player);
+  const hand=card.dataset.hand;
+  if(state.mode==='ai' && state.currentPlayer===2) return;
+
+  if(state.phase==='select-attacker'){
+    if(player!==state.currentPlayer) return;
+    if(state.hands[player][hand]===0) return;
+    state.selectedAttacker={player,hand};
+    state.phase='select-target';
+    sfxSelect(); renderAll();
+  } else if(state.phase==='select-target'){
+    const opp=state.currentPlayer===1?2:1;
+    if(player!==opp){
+      if(state.hands[player][hand]!==0){
+        state.selectedAttacker={player,hand};
+        sfxSelect(); renderAll();
+      }
+      return;
+    }
+    if(state.hands[player][hand]===0) return;
+    const {player:ap,hand:ah}=state.selectedAttacker;
+    executeAttack(ap,ah,player,hand);
+  }
+}
+
+function cancelSelection(){
+  state.phase='select-attacker'; state.selectedAttacker=null;
+  sfxCancel(); renderAll();
+}
+
+// ─── AI ENGINE ────────────────────────────────────────────────
+function scheduleAiMove(){
+  el('ai-thinking').classList.add('show');
+  const delay = 900+Math.random()*600;
+  setTimeout(()=>{ el('ai-thinking').classList.remove('show'); doAiMove(); }, delay);
+}
+
+function doAiMove(){
+  if(state.gameOver||state.currentPlayer!==2) return;
+
+  // Consider split first if highly beneficial
+  const sp = canSplit(2);
+  let useSplit = false;
+  if(sp){
+    // AI uses split with 40% probability when available (to vary play)
+    useSplit = Math.random()<0.4;
+  }
+
+  if(useSplit && sp){
+    executeSplit(); return;
+  }
+
+  const myHands  = ['left','right'].filter(h=>state.hands[2][h]>0);
+  const oppHands = ['left','right'].filter(h=>state.hands[1][h]>0);
+  let bestMove=null, bestScore=-Infinity;
+
+  for(const ah of myHands){
+    for(const th of oppHands){
+      const {newVal}=computeAttack(state.hands[2][ah],state.hands[1][th]);
+      let score=(newVal===0)?10:(state.hands[1][th]-newVal);
+      score+=Math.random()*.5;
+      if(score>bestScore){bestScore=score;bestMove={ah,th};}
+    }
+  }
+
+  if(bestMove){
+    state.selectedAttacker={player:2,hand:bestMove.ah};
+    state.phase='select-target';
+    renderAll();
+    setTimeout(()=>executeAttack(2,bestMove.ah,1,bestMove.th),400);
+  }
+}
+
+// ─── WIN SCREEN ───────────────────────────────────────────────
+function showWin(winner){
+  sfxWin();
+  const pr = profiles[winner];
+  const subs=['Unstoppable!','Finger Master!','Flawless!','Domination!','Legend!'];
+  const sub = subs[Math.floor(Math.random()*subs.length)];
+
+  const av = el('win-avatar');
+  if(pr.photo){
+    av.innerHTML=`<img src="${pr.photo}" alt="${pr.name}"/>`;
+  } else {
+    av.textContent=pr.icon;
+  }
+
+  el('win-title').textContent=`${pr.name} Wins!`;
+  el('win-title').className='win-title'+(winner===2?' p2win':'');
+  el('win-sub').textContent=sub;
+  el('win-overlay').classList.add('show');
+}
+
+// ─── GAME CONTROL ─────────────────────────────────────────────
+function restartGame(){
+  state.hands={1:{left:1,right:1},2:{left:1,right:1}};
+  state.currentPlayer=1; state.phase='select-attacker';
+  state.selectedAttacker=null; state.gameOver=false;
+  el('win-overlay').classList.remove('show');
+  el('math-flash').classList.remove('show');
+  el('attack-path').classList.remove('show');
+  el('ai-thinking').classList.remove('show');
+  renderAll();
+}
+
+function setMode(mode){
+  state.mode=mode;
+  el('btn-pvp').classList.toggle('active',mode==='pvp');
+  el('btn-ai').classList.toggle('active',mode==='ai');
+  restartGame();
+}
+
+function toggleSound(){
+  state.soundOn=!state.soundOn;
+  el('sound-btn').textContent=state.soundOn?'🔊':'🔇';
+}
+
+function getPlayerName(p){
+  return profiles[p].name || `Player ${p}`;
+}
+
+// ─── CUSTOMISE OVERLAY ────────────────────────────────────────
+let custPlayer = 1;
+let custTempPhoto = null;
+
+function buildEmojiGrid(){
+  const grid = el('emoji-grid');
+  grid.innerHTML='';
+  EMOJI_OPTIONS.forEach(em=>{
+    const btn=document.createElement('button');
+    btn.className='emoji-opt';
+    btn.textContent=em;
+    btn.type='button';
+    btn.onclick=()=>{
+      custTempPhoto=null;
+      document.querySelectorAll('.emoji-opt').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      // Update preview
+      const prev=el('cust-preview');
+      prev.innerHTML=''; prev.textContent=em;
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function openCustomise(player){
+  custPlayer=player;
+  custTempPhoto=null;
+  const pr=profiles[player];
+
+  const title=el('cust-player-title');
+  title.textContent=`EDITING: ${profiles[player].name}`;
+  title.className=`customise-player-title p${player}-title`;
+
+  el('cust-name').value=pr.name;
+
+  // Build emoji grid and mark selected
+  buildEmojiGrid();
+  document.querySelectorAll('.emoji-opt').forEach(b=>{
+    if(b.textContent===pr.icon) b.classList.add('selected');
+  });
+
+  // Set preview
+  const prev=el('cust-preview');
+  if(pr.photo){
+    prev.innerHTML=`<img src="${pr.photo}" alt=""/>`;
+  } else {
+    prev.innerHTML=''; prev.textContent=pr.icon;
+  }
+
+  el('cust-file-input').value='';
+  el('customise-overlay').classList.add('show');
+}
+
+function closeCustomise(){
+  el('customise-overlay').classList.remove('show');
+}
+
+function handlePhotoUpload(evt){
+  const file=evt.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    custTempPhoto=e.target.result;
+    const prev=el('cust-preview');
+    prev.innerHTML=`<img src="${custTempPhoto}" alt=""/>`;
+    // Deselect emojis
+    document.querySelectorAll('.emoji-opt').forEach(b=>b.classList.remove('selected'));
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveCustomise(){
+  const pr=profiles[custPlayer];
+  const nameVal=el('cust-name').value.trim();
+  pr.name = nameVal || `P${custPlayer}`;
+
+  if(custTempPhoto){
+    pr.photo=custTempPhoto;
+    pr.icon='';
+  } else {
+    const sel=document.querySelector('.emoji-opt.selected');
+    if(sel){ pr.icon=sel.textContent; pr.photo=null; }
+  }
+
+  closeCustomise();
+  renderAll();
+}
+
+// ─── TUTORIAL ─────────────────────────────────────────────────
+function openTutorial(){ el('tutorial-overlay').classList.add('show'); }
+function closeTutorial(){ el('tutorial-overlay').classList.remove('show'); }
+
+// ─── KEYBOARD SUPPORT ─────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    cancelSelection();
+    el('tutorial-overlay').classList.remove('show');
+    el('win-overlay').classList.remove('show');
+    el('customise-overlay').classList.remove('show');
+  }
+  if((e.key==='Enter'||e.key===' ')&&document.activeElement?.classList.contains('hand-card')){
+    document.activeElement.click();
+  }
+});
+el('tutorial-overlay').addEventListener('click',e=>{ if(e.target===el('tutorial-overlay')) closeTutorial(); });
+el('win-overlay').addEventListener('click',e=>{ if(e.target===el('win-overlay')) el('win-overlay').classList.remove('show'); });
+el('customise-overlay').addEventListener('click',e=>{ if(e.target===el('customise-overlay')) closeCustomise(); });
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderAll();
+if(!sessionStorage.getItem('ncwg-seen')){
+  setTimeout(openTutorial,400);
+  sessionStorage.setItem('ncwg-seen','1');
+}
+</script>
+</body>
+</html>
